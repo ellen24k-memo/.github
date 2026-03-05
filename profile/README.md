@@ -439,6 +439,12 @@ graph LR
 
 이 프로젝트는 자체 개발한 3개의 Spring Boot 라이브러리와 1개의 React 라이브러리를 사용한다.
 
+#### Frontend
+
+| 라이브러리 | 용도 | 핵심 기능 |
+|---|---|---|
+| `react-auth-keycloak` | 인증 | `AuthProvider`, `useAuth`, `useRoles` 제공, PKCE S256 지원 |
+
 #### Backend
 
 | 라이브러리 | 용도 | 핵심 기능 |
@@ -447,11 +453,229 @@ graph LR
 | `springboot-log-router` | 로그 라우팅 | `@UseLogRouter` → File/Sentry 분기, 로깅 지원 |
 | `springboot-crypto-transit` | 암호화 | `@UseCryptoTransit` → Vault Transit 기반 필드 암·복호화 |
 
-#### Frontend
 
-| 라이브러리 | 용도 | 핵심 기능 |
+### react-auth-keycloak
+
+React용 Keycloak 인증 라이브러리. TypeScript 기반, SSR 호환, RBAC 내장.
+
+```mermaid
+graph LR
+    App["React App"] --> React["React Layer<br/>(Hooks · Guards)"]
+    React --> Browser["Browser Layer<br/>(Keycloak Adapter)"]
+    React --> Core["Core Layer<br/>(SSR-safe)"]
+    Browser --> Core
+    Browser --> KC["Keycloak Server"]
+```
+
+**설치**
+```bash
+npm config set @io.github.ellen24k:registry https://nexus.ellen24k.r-e.kr/repository/npm-release/
+npm install @io.github.ellen24k/react-auth-keycloak keycloak-js
+```
+
+**핵심 사용법**
+```tsx
+import { AuthProvider, useAuth, useRoles, RequireAuth, RequireRole } from '@io.github.ellen24k/react-auth-keycloak/react';
+
+// AuthProvider로 앱 래핑
+<AuthProvider options={{
+  keycloak: { url: '...', realm: '...', clientId: '...' },
+  init: { onLoad: 'check-sso', pkceMethod: 'S256' },
+  refresh: { enabled: true, minValiditySeconds: 30 },
+}}>
+  <App />
+</AuthProvider>
+
+// 인증 상태 접근
+const { state, login, logout, refreshToken } = useAuth();
+
+// 역할 확인
+const { hasRole, hasAnyRole, hasAllRoles } = useRoles();
+hasRole({ kind: 'realm', name: 'admin' });
+
+// Guard 컴포넌트
+<RequireAuth fallback={<p>로그인 필요</p>}><Dashboard /></RequireAuth>
+<RequireRole roles={[{ kind: 'realm', name: 'admin' }]} fallback={<p>권한 없음</p>}><AdminPanel /></RequireRole>
+```
+
+
+---
+
+### springboot-auth-keycloak
+
+Spring Boot용 Keycloak OAuth2 JWT 인증 라이브러리. Auto-Configuration으로 Security Filter Chain 자동 구성, `KeycloakUserContext`로 사용자 정보 즉시 접근.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Filter as Security Filter Chain
+    participant Converter as JwtAuthenticationConverter
+    participant Context as KeycloakUserContext
+    participant API as Controller / Service
+
+    Client->>Filter: Authorization: Bearer JWT
+    Filter->>Converter: JWT 파싱 + 역할 추출
+    Converter->>Converter: role-attribute 경로에서 역할 → ROLE_ 접두사 부여
+    Converter-->>Filter: JwtAuthenticationToken
+    Filter->>API: 인증 완료
+    API->>Context: getUserId() / getEmail() / hasRole()
+    Context-->>API: 사용자 정보 반환
+```
+
+**설치**
+```gradle
+dependencies {
+    implementation 'io.github.ellen24k.springboot:auth-keycloak-spring:+'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+}
+```
+
+**설정**
+```properties
+spring.security.oauth2.resource-server.jwt.issuer-uri=https://keycloak.example.com/realms/my-realm
+springboot-auth-keycloak.public-paths=/api/public,/actuator/health,/api-docs/**
+springboot-auth-keycloak.cors.allowed-origins=http://localhost:3000
+```
+
+**핵심 사용법**
+```java
+@Service
+@RequiredArgsConstructor
+public class MyService {
+    private final KeycloakUserContext userContext;
+
+    public void example() {
+        String userId = userContext.getUserId();       // sub
+        String email  = userContext.getEmail();        // email
+        boolean admin = userContext.hasRole("admin");  // ROLE_ 접두사 불필요
+    }
+}
+
+// 메서드 레벨 보안
+@PreAuthorize("hasRole('admin')")
+public List<User> getUsers() { ... }
+```
+
+
+---
+
+### springboot-crypto-transit
+
+HashiCorp Vault Transit 엔진 기반 **필드 레벨 자동 암/복호화** Spring Boot Starter. `@UseCryptoTransit` 어노테이션으로 AOP 기반 자동 처리.
+
+```mermaid
+graph LR
+    Caller["호출자"] --> AOP_Before["AOP Before<br/>파라미터 암호화"]
+    AOP_Before --> Method["메서드 실행<br/>(DB 저장 등)"]
+    Method --> AOP_After["AOP After<br/>리턴값 복호화"]
+    AOP_After --> Caller
+    AOP_Before --> Vault["Vault Transit<br/>encrypt"]
+    AOP_After --> Vault2["Vault Transit<br/>decrypt"]
+```
+
+**설치**
+```gradle
+repositories {
+    maven { url "https://nexus.ellen24k.r-e.kr/repository/maven-public/" }
+}
+dependencies {
+    implementation('io.github.ellen24k:crypto-transit:+')
+}
+```
+
+**설정**
+```properties
+springboot-crypto-transit.addr=${VAULT_ADDR}
+springboot-crypto-transit.token=${VAULT_TOKEN}
+springboot-crypto-transit.transit.key=${VAULT_TRANSIT_KEY}
+```
+
+**핵심 사용법**
+```java
+// Entity/DTO 필드에 어노테이션
+public class User {
+    @UseCryptoTransit
+    private String phoneNumber;                              // 항상 암호화
+
+    @UseCryptoTransit(enabledBy = "shouldEncryptEmail")
+    private String email;                                     // 조건부 암호화
+
+    private boolean shouldEncryptEmail;
+}
+
+// 서비스 메서드에 어노테이션 → AOP 트리거
+@Service
+@RequiredArgsConstructor
+public class UserService {
+    @UseCryptoTransit
+    public User saveUser(User user) {
+        // 진입 시: 파라미터 필드 암호화 → "vault:v1:..."
+        return repository.save(user);
+        // 반환 시: 리턴값 필드 복호화 → 원본 평문
+    }
+}
+```
+
+
+---
+
+### springboot-log-router
+
+Spring Boot 로깅 라이브러리. 카테고리별 Logger API로 로그를 **단일 라우팅 대상**(File / Sentry / Both)으로 집중.
+
+**설치**
+```gradle
+dependencies {
+    implementation('io.github.ellen24k:log-router:+')
+}
+```
+
+**핵심 사용법**
+```java
+import io.github.ellen24k.log.router.api.app;
+
+app.http.info("GET /api/users - 200 OK");
+app.service.info("User registration completed: {}", email);
+app.security.error("Unauthorized access attempt from IP {}", clientIp);
+app.audit.warn("User {} modified critical data", userId);
+app.core.debug("Business rule validation passed");
+app.persistence.debug("Query executed: {} rows affected", count);
+app.integration.info("External API call succeeded");
+
+// 커스텀 로거
+app.custom("payment").info("결제 승인: orderId={}", orderId);
+```
+
+| 카테고리 | Logger 이름 | 용도 |
 |---|---|---|
-| `react-auth-keycloak` | 인증 | `AuthProvider`, `useAuth`, `useRoles` 제공, PKCE S256 지원 |
+| `app.http` | `app.http` | Controller, Filter, HTTP Client |
+| `app.service` | `app.service` | Service 계층 |
+| `app.core` | `app.core` | 핵심 도메인, 비즈니스 규칙 |
+| `app.persistence` | `app.persistence` | Repository, DB |
+| `app.integration` | `app.integration` | 외부 API, MQ, Kafka |
+| `app.security` | `app.security` | 인증/인가/암호화 |
+| `app.audit` | `app.audit` | 감사 로그 |
+| `app.custom("name")` | `app.{name}` | 동적 커스텀 로거 |
+
+**Target 설정**
+
+```properties
+springboot-log-router.target=2
+```
+
+| 값 | 이름 | 설명 |
+|---|---|---|
+| `0` | `DISABLE` | 비활성화 |
+| `1` | `FILE` | `logs/router/application.log` (JsonLayout) |
+| `2` | `SENTRY` (기본) | Sentry 전송, 실패 시 FILE 폴백 |
+| `3` | `BOTH` | FILE + SENTRY 동시 |
+
+**환경별 레벨 설정**
+```properties
+springboot-log-router.file-level=DEBUG
+springboot-log-router.sentry-level=ERROR
+```
 
 ---
 
