@@ -834,6 +834,15 @@ sequenceDiagram
 | **Sentry** | 에러 수집·대시보드 | dev + prod |
 | **Log Router** | 로그를 File(warn↑)과 Sentry(debug↑)로 분기 | dev + prod |
 
+#### Sentry 에러 수집 화면
+
+![Sentry](./docs/images/sentry.png)
+
+#### Sentry replay (버그 재현 영상: 메모 자동 저장 완료 전 삭제 시 에러 발생)
+
+![Sentry](./docs/images/sentry_autosave_delete_bug.webp)
+
+
 ---
 
 ## 상세 문서 모음
