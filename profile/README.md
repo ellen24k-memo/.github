@@ -439,22 +439,7 @@ graph LR
 
 이 프로젝트는 자체 개발한 3개의 Spring Boot 라이브러리와 1개의 React 라이브러리를 사용한다.
 
-#### Frontend
-
-| 라이브러리 | 용도 | 핵심 기능 |
-|---|---|---|
-| `react-auth-keycloak` | 인증 | `AuthProvider`, `useAuth`, `useRoles` 제공, PKCE S256 지원 |
-
-#### Backend
-
-| 라이브러리 | 용도 | 핵심 기능 |
-|---|---|---|
-| `springboot-auth-keycloak` | 인증 | JWT 파싱 → `KeycloakUserContext` 제공, public path 설정 가능 |
-| `springboot-log-router` | 로그 라우팅 | `@UseLogRouter` → File/Sentry 분기, 로깅 지원 |
-| `springboot-crypto-transit` | 암호화 | `@UseCryptoTransit` → Vault Transit 기반 필드 암·복호화 |
-
-
-### react-auth-keycloak
+### - react-auth-keycloak
 
 React용 Keycloak 인증 라이브러리. TypeScript 기반, SSR 호환, RBAC 내장.
 
@@ -501,7 +486,7 @@ hasRole({ kind: 'realm', name: 'admin' });
 
 ---
 
-### springboot-auth-keycloak
+### - springboot-auth-keycloak
 
 Spring Boot용 Keycloak OAuth2 JWT 인증 라이브러리. Auto-Configuration으로 Security Filter Chain 자동 구성, `KeycloakUserContext`로 사용자 정보 즉시 접근.
 
@@ -560,7 +545,7 @@ public List<User> getUsers() { ... }
 
 ---
 
-### springboot-crypto-transit
+### - springboot-crypto-transit
 
 HashiCorp Vault Transit 엔진 기반 **필드 레벨 자동 암/복호화** Spring Boot Starter. `@UseCryptoTransit` 어노테이션으로 AOP 기반 자동 처리.
 
@@ -620,7 +605,7 @@ public class UserService {
 
 ---
 
-### springboot-log-router
+### - springboot-log-router
 
 Spring Boot 로깅 라이브러리. 카테고리별 Logger API로 로그를 **단일 라우팅 대상**(File / Sentry / Both)으로 집중.
 
