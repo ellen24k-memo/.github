@@ -8,6 +8,7 @@ graph LR
     B -->|"buildx build<br/>(docker-container 드라이버)"| C[멀티스테이지 빌드]
     C -->|"--push<br/>(직접 레지스트리 전송)"| D["Nexus Registry<br/>(docker-release)"]
     B <-->|cache-from / cache-to| E["Nexus Registry<br/>(buildcache)"]
+    C -->|"버전 자동 태깅<br/>(latest + build.gradle version)"| D
 
     style B stroke-dasharray: 5 5
 ```
@@ -106,18 +107,27 @@ tasks.json
 | 변수 | 값 | 용도 |
 |------|-----|------|
 | `DOCKER_HOST` | `ssh://root@192.168.1.102` | 원격 Docker 호스트 연결 |
-| `IMAGE_TAG` | `nexus.ellen24k.r-e.kr/docker-release/memo-backend:latest` | 이미지 태그 |
 
 ### Task: Remote Docker Build & Push
 
+`build.gradle`의 `version`을 자동 추출하여 `latest`와 버전 태그를 동시에 push한다.
+
 ```shell
+$v = ((Get-Content build.gradle | Where-Object { $_ -match '^version' }) -replace '[^0-9.]', '')
+
 docker buildx build \
   --push \
   --progress=plain \
-  --cache-from=type=registry,ref=...memo-backend:buildcache \
-  --cache-to=type=registry,ref=...memo-backend:buildcache,mode=max \
-  -t nexus.ellen24k.r-e.kr/docker-release/memo-backend:latest .
+  --cache-from=type=registry,ref=nexus.ellen24k.r-e.kr/docker-release/memo-backend:buildcache \
+  --cache-to=type=registry,ref=nexus.ellen24k.r-e.kr/docker-release/memo-backend:buildcache,mode=max \
+  -t nexus.ellen24k.r-e.kr/docker-release/memo-backend:latest \
+  -t nexus.ellen24k.r-e.kr/docker-release/memo-backend:$v .
 ```
+
+레지스트리에 push되는 태그:
+
+- `memo-backend:latest` — 항상 최신
+- `memo-backend:0.9.1` — 롤백 포인트 (build.gradle version에서 자동 추출)
 
 ### buildx 옵션 설명
 
@@ -127,6 +137,7 @@ docker buildx build \
 | `--progress=plain` | 전체 빌드 로그 출력 (VS Code 터미널에서 Gradle 로그 확인 용이) |
 | `--cache-from=type=registry` | Nexus 레지스트리의 `buildcache` 태그에서 캐시 레이어를 pull |
 | `--cache-to=type=registry,mode=max` | 모든 중간 레이어를 레지스트리에 캐시로 push |
+| `-t` (복수) | `latest` + 버전 태그를 한 번의 빌드로 동시 push |
 
 ### 레지스트리 캐시 (`--cache-from` / `--cache-to`)
 
