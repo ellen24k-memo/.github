@@ -1067,6 +1067,7 @@ sequenceDiagram
 | [dto.md](docs/backend/dto.md) | 도메인별 Request/Response 객체 분석, Entity↔DTO 매핑 및 직렬화/역직렬화 정책 |
 | [service-repository.md](docs/backend/service-repository.md) | Service 간 참조, 소유권 2단계 검증 로직, 중앙 집중식 에러 처리 체계 등 핵심 비즈니스 로직 |
 | [file-system.md](docs/backend/file-system.md) | 파일 스토리지 아키텍처 - CAS 로직 기반 중복 방지, MinIO 스트리밍/Pre-signed URL 통신, 다단계 파일 유효성 검증망 |
+| [docker-build-optimization.md](docs/backend/docker-build-optimization.md) | Docker 멀티스테이지 빌드 최적화, 레이어 캐싱 전략, 빌드 성능 개선 방안 |
 
 ### Frontend
 
