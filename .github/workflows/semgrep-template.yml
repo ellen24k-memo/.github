@@ -1,0 +1,43 @@
+name: "Central Security Scan"
+
+on:
+  workflow_call:
+    inputs:
+      project_type:
+        description: '프로젝트 타입 (예: spring, react)'
+        required: false
+        type: string
+        default: 'common'
+      fail_on_findings:
+        description: '취약점 발견 시 워크플로우 실패 여부'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  semgrep:
+    name: Semgrep Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Run Semgrep (Fail on findings)
+        if: ${{ inputs.fail_on_findings == true }}
+        run: |
+          semgrep scan \
+            --config "p/default" \
+            --disable-version-check \
+            --error
+
+      - name: Run Semgrep (Report only)
+        if: ${{ inputs.fail_on_findings != true }}
+        run: |
+          semgrep scan \
+            --config "p/default" \
+            --disable-version-check
+
