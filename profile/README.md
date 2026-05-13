@@ -1,10 +1,7 @@
 ![프로젝트_소개](./docs/images/preview.png)
 
 
-
-https://github.com/user-attachments/assets/5243cf21-3acd-489f-abef-23ccf5ce481b
-
-
+https://github.com/user-attachments/assets/17f30b9f-a873-4654-8990-ac5eec2313e3
 
 ---
 
