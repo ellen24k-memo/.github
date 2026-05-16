@@ -63,16 +63,17 @@ https://github.com/user-attachments/assets/17f30b9f-a873-4654-8990-ac5eec2313e3
 
 ---
 
+### 메모 수정 및 태그 관리
+
+![태그_입력](./docs/images/tag_management.webp)
+
+---
+
 ### 파일 첨부
 
 ![파일_첨부](./docs/images/file_attachment.webp)
 
-
 ---
-
-### 태그 관리
-
-![태그_입력](./docs/images/tag_management.webp)
 
 ### 그 외 기능
 - Markdown 에디터 기본 모드 설정(live preview / edit)
