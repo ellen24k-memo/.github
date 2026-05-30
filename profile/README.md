@@ -336,6 +336,10 @@ CAS(Content-Addressable Storage) 기반으로 동일 파일의 중복 저장을 
 - 파일 업로드 시 SHA-256 해시를 계산해 기존 파일과 비교
 - 동일 파일이면 재사용(refCount++), 신규 파일만 MinIO에 저장
 
+#### CAS 작동 영상
+
+https://github.com/user-attachments/assets/c19518ce-d558-4b6c-82ba-f66b48c1c9c5
+
 Pre-signed URL을 사용한 파일 다운로드
 - 다운로드 시 30분 유효한 임시 URL을 발급해 백엔드 경유 없이 MinIO에서 직접 다운로드
 
@@ -1119,7 +1123,7 @@ flowchart TD
     AppPods -->|"단기 계정으로 DB 접속"| TargetDB
 ```
 
-#### 작동 영상
+#### Database Dynamic Secret 작동 영상
 
 
 https://github.com/user-attachments/assets/3e5b959c-3cd9-4c3b-b556-adfd1a724b0a
