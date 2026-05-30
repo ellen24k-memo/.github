@@ -1119,6 +1119,12 @@ flowchart TD
     AppPods -->|"단기 계정으로 DB 접속"| TargetDB
 ```
 
+#### 작동 영상
+
+
+https://github.com/user-attachments/assets/3e5b959c-3cd9-4c3b-b556-adfd1a724b0a
+
+
 
 GitHub 저장소에는 평문 시크릿을 저장하지 않으며, ESO가 Vault에서 값을 읽어 Kubernetes Secret으로 동기화하는 DevSecOps 환경을 구축하였다.
 
