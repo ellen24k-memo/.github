@@ -1149,6 +1149,187 @@ GitHub 저장소에는 평문 시크릿을 저장하지 않으며, ESO가 Vault�
 #### 사이트에 등록된 화면
 ![사이트에 등록된 화면](./docs/images/1774600345437.jpg)
 
+### TAGMEMO SKILLS 
+
+#### MCP 결과의 편차를 최소화하기 위해 SKILL로 품질 향상.
+
+<details>
+<summary>TAGMEMO-MCP 사용해서 메모를 저장하는 SKILL (클릭해서 펼치기)</summary>
+---
+name: tagmemo-pdf-ingest
+description: Extract text from a PDF and register it into TagMemo with a structured Markdown summary (tables + mermaid) and attach the original PDF.
+---
+
+# TagMemo PDF Ingestion Workflow
+
+## Korean Quick Command (Guaranteed Pattern)
+
+If the user says the following pattern, interpret it as a request to run this skill.
+
+패턴:
+
+메모스킬로 <PDF파일명> 저장
+
+예시:
+
+메모스킬로 XSS.pdf 저장
+메모스킬로 report.pdf 저장
+메모스킬로 security-notes.pdf 저장
+
+해석 규칙:
+
+- 파일명이 경로 없이 주어지면 기본 위치 `/root/cli/`에서 찾는다.
+- 예: `XSS.pdf` → `/root/cli/XSS.pdf`
+- 해당 PDF에 대해 다음을 수행한다:
+  - mcp_TagMemo_extract_pdf_text
+  - Markdown 정리 생성 (table + mermaid)
+  - mcp_TagMemo_register_pdf_to_memo 실행
+  - 원본 PDF 첨부
+
+완료 후 반드시 아래와 같은 **간단 요약 출력**을 사용자에게 보여준다.
+
+출력 포맷:
+
+저장 완료
+
+- 문서: <추출된 제목 또는 파일 기반 제목>
+- 파일: <PDF 파일명>
+- 태그: <생성된 tags 목록>
+- 메모ID: <TagMemo memo id>
+- 한줄요약: <문서 핵심 내용 1줄 요약>
+
+출력 예:
+
+저장 완료
+
+- 문서: Cross‑Site Scripting 실습 정리
+- 파일: XSS.pdf
+- 태그: security, xss, web-security
+- 메모ID: 02391dae-xxxx
+- 한줄요약: innerHTML 환경에서 XSS 우회와 DOM 기반 XSS 및 쿠키 탈취 실습 정리
+
+---
+
+# TagMemo PDF Ingestion Workflow
+
+This skill automates the process of turning a PDF into a structured knowledge memo in TagMemo.
+
+It performs:
+
+- PDF text extraction
+- Knowledge summarization
+- Markdown formatting with tables
+- Mermaid diagrams when useful
+- TagMemo memo creation
+- Original PDF attachment
+
+## When to use
+
+Use this when:
+
+- Importing study materials
+- Converting lecture PDFs into notes
+- Building a searchable knowledge base
+- Archiving security research PDFs
+
+---
+
+# Workflow
+
+- Step 1: Extract text from the PDF
+
+Use MCP tool:
+
+mcp_TagMemo_extract_pdf_text
+
+Example:
+
+file_path: /path/to/file.pdf
+
+This returns the raw text content of the PDF.
+
+---
+
+- Step 2: Analyze and structure the content
+
+Create a clean Markdown document containing:
+
+- Title
+- Metadata table
+- Section summaries
+- Important code snippets
+- Mermaid diagrams (if flows exist)
+- Security insights / conclusions
+
+Recommended structure:
+
+# Title
+
+## Document Info
+
+| Field | Value |
+|---|---|
+
+## Key Concepts
+
+## Experiments / Steps
+
+## Attack Flow
+
+```mermaid
+flowchart LR
+...
+```
+
+## Lessons Learned
+
+---
+
+- Step 3: Register the memo in TagMemo
+
+Use MCP tool:
+
+mcp_TagMemo_register_pdf_to_memo
+
+Parameters:
+
+file_name: original PDF filename
+summary: markdown summary
+tags: list of tags
+
+Example:
+
+file_name: example.pdf
+summary: <generated markdown>
+tags:
+- security
+- xss
+- study
+
+This will:
+
+- Create a memo
+- Store the markdown
+- Upload the original PDF
+
+---
+
+# Example Command Pattern
+
+"Use tagmemo-pdf-ingest to import /root/cli/XSS.pdf with tags security,xss"
+
+---
+
+# Tips
+
+- Prefer structured Markdown over plain summaries
+- Always include diagrams for technical flows
+- Use tables for definitions and comparisons
+- Add security implications when analyzing vulnerabilities
+
+
+</details>
+
 ---
 
 ## 상세 문서 모음
