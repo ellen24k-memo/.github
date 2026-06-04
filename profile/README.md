@@ -163,7 +163,7 @@ flowchart TB
 | **GitOps**        | **ArgoCD**, **Kustomize**                                                                       | **ArgoCD**, **Kustomize**                     |
 | **시크릿 관리**        | **External Secrets Operator (ESO)**                                                             | —                                             |
 | **서버 갱신**         | **Stakater Reloader** (자동 재시작)                                                                  | **Stakater Reloader** (자동 재시작)                |
-| **잉그레스**          | Traefik IngressRoute                                                                            | Traefik IngressRoute                          |
+| **인그레스**          | Traefik IngressRoute                                                                            | Traefik IngressRoute                          |
 | **리버스 프록시**       | Caddy Proxy (SSL / IP 차단)                                                                       | Caddy Proxy (SSL / IP 차단)                     |
 | **패키징/운영**        | Docker, Kubernetes                                                                              | Docker (Nginx), Kubernetes                    |
 
