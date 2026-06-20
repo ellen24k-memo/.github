@@ -865,6 +865,8 @@ graph TD
 
 #### 트랜잭션 관리
 
+Service 계층에 @Transactional을 적용하여 데이터 변경 작업의 원자성과 일관성을 보장했으며, 조회 전용 API에는 @Transactional(readOnly = true)를 적용해 불필요한 변경 감지와 Flush를 방지하도록 최적화했습니다. 또한 파일 업로드 과정에서 MinIO 업로드가 실패할 경우 예외를 전파하여 DB 트랜잭션 전체가 롤백되도록 함으로써, 파일 메타데이터와 실제 저장 파일 간의 데이터 불일치가 발생하지 않도록 설계했습니다.
+
 | Service | 기본 | 조회 메서드 |
 |---|---|---|
 | `MemoService` | `@Transactional` | `@Transactional(readOnly = true)` |
