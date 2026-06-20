@@ -593,7 +593,7 @@ public class UserService {
 
 ### - springboot-log-router
 
-Spring Boot 로깅 라이브러리. 카테고리별 Logger API로 로그를 **단일 라우팅 대상**(File / Sentry / Both)으로 집중.
+Spring Boot 로깅 라이브러리. 카테고리별 Logger API로 로그를 **단일 라우팅 대상**(File / Sentry / Both)으로 설정.
 
 **설치**
 ```gradle
@@ -800,21 +800,22 @@ graph LR
 
 #### 타입 디커플링 패턴
 
-백엔드 DTO를 그대로 쓰지 않고 프론트엔드 모델로 변환하여, API 규격 변경의 영향 범위를 Service 계층으로 국한한다.
+백엔드 DTO를 그대로 쓰지 않고 프론트엔드 모델로 변환하여 타입 디커플링 패턴을 적용. 이를 통해 컴포넌트는 데이터 가공 대신 UI 렌더링에만 담당하고, API 응답 형식이 변경되더라도 매핑 로직만 수정하면 되어 변경 영향 범위를 변환 계층으로 제한.
 
 | Backend DTO (`MemoResponse`) | Frontend Model (`Memo`) | 변환 로직 |
 |---|---|---|
-| `tags: TagResponse[]` | `tags: string[]` | tag.name 배열로 평탄화 (컴포넌트 복잡도 ↓) |
-| `createdAt`, `updatedAt` | `createdDate`, `updatedDate` | ISO 8601 → JS `Date` 즉시 파싱 |
-| `fileCount: number` | `fileCount`, `hasFile` | `fileCount > 0` 여부를 미리 계산 |
-| (미존재) | `raw?: MemoResponse` | deep access 비상 상황 대비 원본 보존 |
+| `tags: TagResponse[]` | `tags: string[]` | UI에서 사용하기 쉽도록 태그 이름 배열로 변환  |
+| `createdAt`, `updatedAt` | `createdDate`, `updatedDate` | 문자열을 Date 객체로 변환하여 날짜 처리 로직 단순화 |
+| `fileCount: number` | `fileCount`, `hasFile` | 파일 존재 여부를 미리 계산하여 UI 조건문 단순화 |
 
 #### 캐시 무효화 전략
 
+생성·삭제처럼 목록 구성이 바뀌는 작업은 resetQueries로 전체 목록을 초기화, 수정·태그 변경처럼 일부 데이터만 변경되는 작업은 invalidateQueries로 필요한 Query만 무효화하여 불필요한 네트워크 요청을 줄임.
+
 | 전략 | 동작 | 사용 시점 |
 |---|---|---|
-| `resetQueries` | 캐시 완전 삭제 → 처음부터 refetch | 메모 생성/삭제 후 (목록 전체 갱신) |
-| `invalidateQueries` | stale 마킹 → 관찰 중이면 refetch | 메모 수정/태그 변경 후 (특정 항목 갱신) |
+| `resetQueries` | 캐시 완전 삭제 → 처음부터 refetch | 메모 생성/삭제 후 목록 전체 재조회가 필요한 경우 |
+| `invalidateQueries` | 캐시를 stale 상태로 표시하고 필요 시 재조회 | 메모 수정, 태그 변경 등 일부 데이터 갱신이 필요한 경우 |
 
 ### 백엔드 아키텍처
 
