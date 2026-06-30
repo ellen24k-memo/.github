@@ -949,6 +949,21 @@ memo_file 테이블의 Insert / Delete 후에 작동하는 트리거가 memo.fil
 
 N+1 문제 해결: Memo 엔터티의 tags, files 컬렉션에 @BatchSize(size = 100)를 적용하여, LAZY 프록시 초기화 시 개별 SELECT 대신 IN 절로 최대 100건을 묶어 조회한다.
 
+#### 추가된 인덱스
+```
+CREATE INDEX IF NOT EXISTS idx_memo_user_updated_at
+ON public.memo (user_id, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_memo_file_memo_id
+ON public.memo_file (memo_id);
+
+CREATE INDEX IF NOT EXISTS idx_memo_file_file_hash
+ON public.memo_file (file_hash);
+
+CREATE INDEX IF NOT EXISTS idx_memo_tag_tag_id
+ON public.memo_tag (tag_id);
+```
+
 #### PostgreSQL ssl 적용
 
 ![ssl 연결 확인](./docs/images/ssl-require.png)
