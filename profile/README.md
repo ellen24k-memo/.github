@@ -11,8 +11,8 @@ https://github.com/user-attachments/assets/17f30b9f-a873-4654-8990-ac5eec2313e3
 - [기능 소개](#기능-소개)
   - [홈](#홈)
   - [메모 작성](#메모-작성)
-  - [파일 첨부](#파일-첨부)
   - [태그 관리](#태그-관리)
+  - [파일 첨부](#파일-첨부)
   - [그 외 기능](#그-외-기능)
 - [인프라 및 기술 스택](#인프라-및-기술-스택)
   - [시스템 인프라 구성도](#시스템-인프라-구성도)
@@ -63,16 +63,17 @@ https://github.com/user-attachments/assets/17f30b9f-a873-4654-8990-ac5eec2313e3
 
 ---
 
+### 태그 관리
+
+![태그_입력](./docs/images/tag_management.webp)
+
+---
+
 ### 파일 첨부
 
 ![파일_첨부](./docs/images/file_attachment.webp)
 
-
 ---
-
-### 태그 관리
-
-![태그_입력](./docs/images/tag_management.webp)
 
 ### 그 외 기능
 - Markdown 에디터 기본 모드 설정(live preview / edit)
@@ -162,7 +163,7 @@ flowchart TB
 | **GitOps**        | **ArgoCD**, **Kustomize**                                                                       | **ArgoCD**, **Kustomize**                     |
 | **시크릿 관리**        | **External Secrets Operator (ESO)**                                                             | —                                             |
 | **서버 갱신**         | **Stakater Reloader** (자동 재시작)                                                                  | **Stakater Reloader** (자동 재시작)                |
-| **잉그레스**          | Traefik IngressRoute                                                                            | Traefik IngressRoute                          |
+| **인그레스**          | Traefik IngressRoute                                                                            | Traefik IngressRoute                          |
 | **리버스 프록시**       | Caddy Proxy (SSL / IP 차단)                                                                       | Caddy Proxy (SSL / IP 차단)                     |
 | **패키징/운영**        | Docker, Kubernetes                                                                              | Docker (Nginx), Kubernetes                    |
 
@@ -334,6 +335,10 @@ flowchart LR
 CAS(Content-Addressable Storage) 기반으로 동일 파일의 중복 저장을 방지한다.
 - 파일 업로드 시 SHA-256 해시를 계산해 기존 파일과 비교
 - 동일 파일이면 재사용(refCount++), 신규 파일만 MinIO에 저장
+
+#### CAS 작동 영상
+
+https://github.com/user-attachments/assets/c19518ce-d558-4b6c-82ba-f66b48c1c9c5
 
 Pre-signed URL을 사용한 파일 다운로드
 - 다운로드 시 30분 유효한 임시 URL을 발급해 백엔드 경유 없이 MinIO에서 직접 다운로드
@@ -588,7 +593,7 @@ public class UserService {
 
 ### - springboot-log-router
 
-Spring Boot 로깅 라이브러리. 카테고리별 Logger API로 로그를 **단일 라우팅 대상**(File / Sentry / Both)으로 집중.
+Spring Boot 로깅 라이브러리. 카테고리별 Logger API로 로그를 **단일 라우팅 대상**(File / Sentry / Both)으로 설정.
 
 **설치**
 ```gradle
@@ -795,21 +800,22 @@ graph LR
 
 #### 타입 디커플링 패턴
 
-백엔드 DTO를 그대로 쓰지 않고 프론트엔드 모델로 변환하여, API 규격 변경의 영향 범위를 Service 계층으로 국한한다.
+백엔드 DTO를 그대로 쓰지 않고 프론트엔드 모델로 변환하여 타입 디커플링 패턴을 적용. 이를 통해 컴포넌트는 데이터 가공 대신 UI 렌더링에만 담당하고, API 응답 형식이 변경되더라도 매핑 로직만 수정하면 되어 변경 영향 범위를 변환 계층으로 제한.
 
 | Backend DTO (`MemoResponse`) | Frontend Model (`Memo`) | 변환 로직 |
 |---|---|---|
-| `tags: TagResponse[]` | `tags: string[]` | tag.name 배열로 평탄화 (컴포넌트 복잡도 ↓) |
-| `createdAt`, `updatedAt` | `createdDate`, `updatedDate` | ISO 8601 → JS `Date` 즉시 파싱 |
-| `fileCount: number` | `fileCount`, `hasFile` | `fileCount > 0` 여부를 미리 계산 |
-| (미존재) | `raw?: MemoResponse` | deep access 비상 상황 대비 원본 보존 |
+| `tags: TagResponse[]` | `tags: string[]` | UI에서 사용하기 쉽도록 태그 이름 배열로 변환  |
+| `createdAt`, `updatedAt` | `createdDate`, `updatedDate` | 문자열을 Date 객체로 변환하여 날짜 처리 로직 단순화 |
+| `fileCount: number` | `fileCount`, `hasFile` | 파일 존재 여부를 미리 계산하여 UI 조건문 단순화 |
 
 #### 캐시 무효화 전략
 
+생성·삭제처럼 목록 구성이 바뀌는 작업은 resetQueries로 전체 목록을 초기화, 수정·태그 변경처럼 일부 데이터만 변경되는 작업은 invalidateQueries로 필요한 Query만 무효화하여 불필요한 네트워크 요청을 줄임.
+
 | 전략 | 동작 | 사용 시점 |
 |---|---|---|
-| `resetQueries` | 캐시 완전 삭제 → 처음부터 refetch | 메모 생성/삭제 후 (목록 전체 갱신) |
-| `invalidateQueries` | stale 마킹 → 관찰 중이면 refetch | 메모 수정/태그 변경 후 (특정 항목 갱신) |
+| `resetQueries` | 캐시 완전 삭제 → 처음부터 refetch | 메모 생성/삭제 후 목록 전체 재조회가 필요한 경우 |
+| `invalidateQueries` | 캐시를 stale 상태로 표시하고 필요 시 재조회 | 메모 수정, 태그 변경 등 일부 데이터 갱신이 필요한 경우 |
 
 ### 백엔드 아키텍처
 
@@ -858,6 +864,8 @@ graph TD
 ```
 
 #### 트랜잭션 관리
+
+Service 계층에 @Transactional을 적용하여 데이터 변경 작업의 원자성과 일관성을 보장했으며, 조회 전용 API에는 @Transactional(readOnly = true)를 적용해 불필요한 변경 감지와 Flush를 방지하도록 최적화. 또한 파일 업로드 과정에서 MinIO 업로드가 실패할 경우 예외를 전파하여 DB 트랜잭션 전체가 롤백되도록 함으로써, 파일 메타데이터와 실제 저장 파일 간의 데이터 불일치가 발생하지 않도록 설계.
 
 | Service | 기본 | 조회 메서드 |
 |---|---|---|
@@ -940,6 +948,21 @@ memo_file 테이블의 Insert / Delete 후에 작동하는 트리거가 memo.fil
 #### N+1 문제 해결
 
 N+1 문제 해결: Memo 엔터티의 tags, files 컬렉션에 @BatchSize(size = 100)를 적용하여, LAZY 프록시 초기화 시 개별 SELECT 대신 IN 절로 최대 100건을 묶어 조회한다.
+
+#### 추가된 인덱스
+```
+CREATE INDEX IF NOT EXISTS idx_memo_user_updated_at
+ON public.memo (user_id, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_memo_file_memo_id
+ON public.memo_file (memo_id);
+
+CREATE INDEX IF NOT EXISTS idx_memo_file_file_hash
+ON public.memo_file (file_hash);
+
+CREATE INDEX IF NOT EXISTS idx_memo_tag_tag_id
+ON public.memo_tag (tag_id);
+```
 
 #### PostgreSQL ssl 적용
 
@@ -1118,6 +1141,12 @@ flowchart TD
     AppPods -->|"단기 계정으로 DB 접속"| TargetDB
 ```
 
+#### Database Dynamic Secret 작동 영상
+
+
+https://github.com/user-attachments/assets/3e5b959c-3cd9-4c3b-b556-adfd1a724b0a
+
+
 
 GitHub 저장소에는 평문 시크릿을 저장하지 않으며, ESO가 Vault에서 값을 읽어 Kubernetes Secret으로 동기화하는 DevSecOps 환경을 구축하였다.
 
@@ -1138,7 +1167,11 @@ GitHub 저장소에는 평문 시크릿을 저장하지 않으며, ESO가 Vault�
 #### 사이트에 등록된 화면
 ![사이트에 등록된 화면](./docs/images/1774600345437.jpg)
 
----
+### TAGMEMO SKILLS 
+
+#### MCP 결과의 편차를 최소화하기 위해 SKILL로 품질 향상.
+
+![HERMES SKILL](./docs/images/hermes_skills.png)
 
 ## 상세 문서 모음
 
